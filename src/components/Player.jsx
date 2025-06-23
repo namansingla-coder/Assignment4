@@ -1,22 +1,48 @@
 import { useState, useEffect } from 'react'
-import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, Shuffle, Repeat, VolumeX, Maximize2 } from 'lucide-react'
+import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, Shuffle, Repeat, VolumeX, Maximize2, List } from 'lucide-react'
 
-const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
-  const [progress, setProgress] = useState(0)
-  const [volume, setVolume] = useState(50)
+const Player = ({ 
+  currentTrack, 
+  isPlaying, 
+  setIsPlaying, 
+  onNext, 
+  onPrevious, 
+  shuffle, 
+  setShuffle, 
+  repeat, 
+  setRepeat, 
+  volume, 
+  setVolume, 
+  progress, 
+  setProgress, 
+  duration,
+  queue,
+  likedSongs,
+  toggleLikedSong
+}) => {
   const [isMuted, setIsMuted] = useState(false)
-  const [isShuffled, setIsShuffled] = useState(false)
-  const [repeatMode, setRepeatMode] = useState('off') // off, all, one
-  const [isLiked, setIsLiked] = useState(false)
+  const [showQueue, setShowQueue] = useState(false)
 
   useEffect(() => {
-    if (isPlaying && currentTrack) {
+    if (isPlaying && currentTrack && duration > 0) {
       const interval = setInterval(() => {
-        setProgress(prev => prev < 100 ? prev + 1 : 0)
+        setProgress(prev => {
+          const newProgress = prev + 1
+          if (newProgress >= duration) {
+            if (repeat === 'one') {
+              setProgress(0)
+              return 0
+            } else {
+              onNext()
+              return 0
+            }
+          }
+          return newProgress
+        })
       }, 1000)
       return () => clearInterval(interval)
     }
-  }, [isPlaying, currentTrack])
+  }, [isPlaying, currentTrack, duration, repeat, onNext])
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -27,7 +53,7 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
   const handleProgressClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect()
     const clickX = e.clientX - rect.left
-    const newProgress = (clickX / rect.width) * 100
+    const newProgress = (clickX / rect.width) * duration
     setProgress(newProgress)
   }
 
@@ -43,23 +69,21 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
     setIsMuted(!isMuted)
   }
 
-  const toggleShuffle = () => {
-    setIsShuffled(!isShuffled)
-  }
-
   const toggleRepeat = () => {
     const modes = ['off', 'all', 'one']
-    const currentIndex = modes.indexOf(repeatMode)
+    const currentIndex = modes.indexOf(repeat)
     const nextIndex = (currentIndex + 1) % modes.length
-    setRepeatMode(modes[nextIndex])
+    setRepeat(modes[nextIndex])
   }
 
   const getRepeatIcon = () => {
-    if (repeatMode === 'one') {
+    if (repeat === 'one') {
       return <span className="text-xs absolute -top-1 -right-1">1</span>
     }
     return null
   }
+
+  const isLiked = likedSongs?.find(s => s.id === currentTrack?.id)
 
   if (!currentTrack) {
     return (
@@ -79,27 +103,28 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
           <p className="font-semibold text-sm truncate">{currentTrack.title}</p>
           <p className="text-gray-400 text-xs truncate">{currentTrack.artist}</p>
         </div>
-        <button onClick={() => setIsLiked(!isLiked)}>
+        <button onClick={() => toggleLikedSong(currentTrack)}>
           <Heart 
             size={16} 
             className={`cursor-pointer transition-colors ${
-              isLiked ? 'text-green-500 fill-current' : 'text-gray-400 hover:text-white'
-            }`} 
+              isLiked ? 'text-green-500' : 'text-gray-400 hover:text-white'
+            }`}
+            fill={isLiked ? 'currentColor' : 'none'}
           />
         </button>
       </div>
 
       <div className="flex flex-col items-center w-2/4">
         <div className="flex items-center space-x-6 mb-2">
-          <button onClick={toggleShuffle}>
+          <button onClick={() => setShuffle(!shuffle)}>
             <Shuffle 
               size={16} 
               className={`cursor-pointer transition-colors ${
-                isShuffled ? 'text-green-500' : 'text-gray-400 hover:text-white'
+                shuffle ? 'text-green-500' : 'text-gray-400 hover:text-white'
               }`} 
             />
           </button>
-          <button className="text-gray-400 hover:text-white cursor-pointer">
+          <button onClick={onPrevious} className="text-gray-400 hover:text-white cursor-pointer">
             <SkipBack size={20} />
           </button>
           <button 
@@ -108,14 +133,14 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
           >
             {isPlaying ? <Pause size={16} fill="black" /> : <Play size={16} fill="black" />}
           </button>
-          <button className="text-gray-400 hover:text-white cursor-pointer">
+          <button onClick={onNext} className="text-gray-400 hover:text-white cursor-pointer">
             <SkipForward size={20} />
           </button>
           <button onClick={toggleRepeat} className="relative">
             <Repeat 
               size={16} 
               className={`cursor-pointer transition-colors ${
-                repeatMode !== 'off' ? 'text-green-500' : 'text-gray-400 hover:text-white'
+                repeat !== 'off' ? 'text-green-500' : 'text-gray-400 hover:text-white'
               }`} 
             />
             {getRepeatIcon()}
@@ -124,7 +149,7 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
         
         <div className="flex items-center space-x-2 w-full max-w-md">
           <span className="text-xs text-gray-400 w-10 text-right">
-            {formatTime(Math.floor(progress * 2))}
+            {formatTime(Math.floor(progress))}
           </span>
           <div 
             className="flex-1 bg-gray-600 rounded-full h-1 cursor-pointer group"
@@ -132,7 +157,7 @@ const Player = ({ currentTrack, isPlaying, setIsPlaying }) => {
           >
             <div 
               className="bg-white h-1 rounded-full transition-all duration-300 group-hover:bg-green-500"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${duration > 0 ? (progress / duration) * 100 : 0}%` }}
             ></div>
           </div>
           <span className="text-xs text-gray-400 w-10">{currentTrack.duration}</span>

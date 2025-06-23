@@ -65,11 +65,12 @@ const Sidebar = ({ playlists, setShowCreateModal, currentView, setCurrentView })
         <ul className="space-y-2">
           {playlists.map((playlist, index) => (
             <li 
-              key={index} 
+              key={playlist.id} 
               className="text-gray-300 hover:text-white cursor-pointer text-sm p-2 rounded hover:bg-gray-800"
-              onClick={() => setCurrentView(`playlist-${index}`)}
+              onClick={() => setCurrentView(`playlist-${playlist.id}`)}
             >
-              {playlist}
+              <div>{playlist.name}</div>
+              <div className="text-xs text-gray-500">{playlist.songs.length} songs</div>
             </li>
           ))}
         </ul>
