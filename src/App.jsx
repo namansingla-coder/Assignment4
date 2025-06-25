@@ -7,8 +7,8 @@ import CreatePlaylistModal from './components/CreatePlaylistModal'
 import EditPlaylistModal from './components/EditPlaylistModal'
 
 function App() {
-  const [currentTrack, setCurrentTrack] = useState(null)
-  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTrack, setCurrentTrack] = useLocalStorage('spotify-current-track', null)
+  const [isPlaying, setIsPlaying] = useLocalStorage('spotify-is-playing', false)
   const [playlists, setPlaylists] = useLocalStorage('spotify-playlists', [])
   const [likedSongs, setLikedSongs] = useLocalStorage('spotify-liked-songs', [])
   const [recentlyPlayed, setRecentlyPlayed] = useLocalStorage('spotify-recently-played', [])
@@ -21,10 +21,10 @@ function App() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingPlaylist, setEditingPlaylist] = useState(null)
   const [searchResults, setSearchResults] = useState([])
-  const [queue, setQueue] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [queue, setQueue] = useLocalStorage('spotify-queue', [])
+  const [currentIndex, setCurrentIndex] = useLocalStorage('spotify-current-index', 0)
+  const [progress, setProgress] = useLocalStorage('spotify-progress', 0)
+  const [duration, setDuration] = useLocalStorage('spotify-duration', 0)
 
   const allTracks = [
     { id: 1, title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: '3:20', genre: 'Pop' },
@@ -96,11 +96,10 @@ function App() {
   }
 
   const toggleLikedSong = (song) => {
-    setLikedSongs(prev => 
-      prev.find(s => s.id === song.id)
-        ? prev.filter(s => s.id !== song.id)
-        : [...prev, song]
-    )
+    const newLikedSongs = likedSongs.find(s => s.id === song.id)
+      ? likedSongs.filter(s => s.id !== song.id)
+      : [...likedSongs, song]
+    setLikedSongs(newLikedSongs)
   }
 
   const handlePlayTrack = (track, trackList = []) => {
